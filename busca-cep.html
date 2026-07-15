@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Busca CEP - ViaCEP</title>
+<style>
+  body { font-family: sans-serif; max-width: 500px; margin: 40px auto; }
+  section { margin-bottom: 30px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+  input { display: block; margin: 6px 0; padding: 6px; width: 100%; box-sizing: border-box; }
+  button { padding: 8px 16px; margin-top: 8px; cursor: pointer; }
+  li { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<section>
+  <h3>Buscar endereço pelo CEP</h3>
+  <input id="cep" placeholder="Digite o CEP (ex: 22041080)">
+  <button onclick="buscaCEP()">BUSCAR</button>
+  <p id="resposta"></p>
+</section>
+
+<section>
+  <h3>Buscar CEP pelo logradouro</h3>
+  <input type="text" id="uf" placeholder="UF" value="RJ">
+  <input type="text" id="cidade" placeholder="Cidade" value="Rio de Janeiro">
+  <input type="text" id="logradouro" placeholder="Logradouro (ex: Copacabana)">
+  <button onclick="buscaLogradouro()">BUSCAR</button>
+  <ul id="resultados"></ul>
+</section>
+
+<script>
+async function buscaCEP() {
+  let cep = document.querySelector("#cep").value.replace(/\D/g, ""); // só números
+
+  if (cep.length !== 8) {
+    document.querySelector("#resposta").innerHTML = "CEP inválido. Digite 8 números.";
+    return;
+  }
+
+  let response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+  let dados = await response.json();
+
+  if (dados.erro) {
+    document.querySelector("#resposta").innerHTML = "CEP não encontrado.";
+    return;
+  }
+
+  document.querySelector("#resposta").innerHTML = `
+    <strong>${dados.logradouro}</strong><br>
+    ${dados.bairro} - ${dados.localidade}/${dados.uf}<br>
+    CEP: ${dados.cep}
+  `;
+
+  console.log(dados);
+}
+
+async function buscaLogradouro() {
+  let uf = document.querySelector("#uf").value;
+  let cidade = document.querySelector("#cidade").value;
+  let logradouro = document.querySelector("#logradouro").value;
+
+  if (!uf || !cidade || !logradouro || logradouro.length < 3) {
+    document.querySelector("#resultados").innerHTML = "Preencha UF, cidade e um logradouro com pelo menos 3 letras.";
+    return;
+  }
+
+  let url = `https://viacep.com.br/ws/${uf}/${cidade}/${logradouro}/json/`;
+  let response = await fetch(url);
+  let dados = await response.json();
+
+  if (!Array.isArray(dados) || dados.length === 0) {
+    document.querySelector("#resultados").innerHTML = "Nenhum endereço encontrado.";
+    return;
+  }
+
+  let itens = dados.map(end =>
+    `<li>${end.logradouro} - ${end.bairro} - CEP: ${end.cep}</li>`
+  );
+
+  document.querySelector("#resultados").innerHTML = itens.join("");
+}
+</script>
+
+</body>
+</html>
